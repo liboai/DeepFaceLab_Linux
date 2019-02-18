@@ -1,9 +1,5 @@
 # Welcome to DeepFaceLab Linux!
 
-## Known Bugs
-
-- GPU Based Extraction throws Device Uninitalized Errors. The broken GPU scripts have been moved to a directory in ``scripts/broken``. The CPU based extractor has no problems and should work well enough.
-
 ## Installation for Ubuntu 18.04 LTS
 
 #### Installing System Dependencies
