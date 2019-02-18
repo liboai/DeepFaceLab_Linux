@@ -40,147 +40,212 @@ class devicelib:
                 self.allow_growth = allow_growth
           
                 self.gpu_idxs = []
-
-                if force_gpu_idxs is not None:
-                    for idx in force_gpu_idxs.split(','):
-                        idx = int(idx)
-                        if devicelib.isValidDeviceIdx(idx):
-                            self.gpu_idxs.append(idx)     
+                
+                if not devicelib.hasNVML():
+                    self.gpu_idxs = [0]
+                    self.gpu_total_vram_gb = 2
+                    self.gpu_names += ['Generic GeForce GPU']
+                    self.gpu_compute_caps += [ 50 ]
                 else:
-                    gpu_idx = force_gpu_idx if (force_gpu_idx >= 0 and devicelib.isValidDeviceIdx(force_gpu_idx)) else devicelib.getBestDeviceIdx() if not choose_worst_gpu else devicelib.getWorstDeviceIdx()
-                    if gpu_idx != -1:
-                        if self.multi_gpu:
-                            self.gpu_idxs = devicelib.getDeviceIdxsEqualModel( gpu_idx )
-                            if len(self.gpu_idxs) <= 1:
-                                self.multi_gpu = False
-                        else:
-                            self.gpu_idxs = [gpu_idx]
-                            
-                self.cpu_only = (len(self.gpu_idxs) == 0)
- 
-                if not self.cpu_only:
-                    self.gpu_names = []
-                    self.gpu_compute_caps = []
-                    for gpu_idx in self.gpu_idxs:
-                        self.gpu_names += [devicelib.getDeviceName(gpu_idx)]
-                        self.gpu_compute_caps += [ devicelib.getDeviceComputeCapability ( gpu_idx ) ]
-                        self.gpu_vram_gb += [ devicelib.getDeviceVRAMTotalGb ( gpu_idx ) ]
+                    if force_gpu_idxs is not None:
+                        for idx in force_gpu_idxs.split(','):
+                            idx = int(idx)
+                            if devicelib.isValidDeviceIdx(idx):
+                                self.gpu_idxs.append(idx)     
+                    else:
+                        gpu_idx = force_gpu_idx if (force_gpu_idx >= 0 and devicelib.isValidDeviceIdx(force_gpu_idx)) else devicelib.getBestDeviceIdx() if not choose_worst_gpu else devicelib.getWorstDeviceIdx()
+                        if gpu_idx != -1:
+                            if self.multi_gpu:
+                                self.gpu_idxs = devicelib.getDeviceIdxsEqualModel( gpu_idx )
+                                if len(self.gpu_idxs) <= 1:
+                                    self.multi_gpu = False
+                            else:
+                                self.gpu_idxs = [gpu_idx]
+                                
+                    self.cpu_only = (len(self.gpu_idxs) == 0)
+     
+                    if not self.cpu_only:
+                        self.gpu_total_vram_gb = devicelib.getDeviceVRAMTotalGb ( self.gpu_idxs[0] )
+                        self.gpu_names = []
+                        self.gpu_compute_caps = []
+                        for gpu_idx in self.gpu_idxs:
+                            self.gpu_names += [devicelib.getDeviceName(gpu_idx)]
+                            self.gpu_compute_caps += [ devicelib.getDeviceComputeCapability ( gpu_idx ) ]
                         
     @staticmethod
-    def getDevicesWithAtLeastTotalMemoryGB(totalmemsize_gb):
-        if not hasNVML:
-            return [0]
-            
+    def hasNVML():
+        try:
+            nvmlInit()
+            nvmlShutdown()
+        except:
+            return False
+        return True    
+     
+    @staticmethod
+    def getDevicesWithAtLeastFreeMemory(freememsize):
         result = []
-        for i in range(nvmlDeviceGetCount()):
-            handle = nvmlDeviceGetHandleByIndex(i)
-            memInfo = nvmlDeviceGetMemoryInfo( handle )
-            if (memInfo.total) >= totalmemsize_gb*1024*1024*1024:
-                result.append (i)
+        try:
+            nvmlInit()
+            for i in range(0, nvmlDeviceGetCount() ):
+                handle = nvmlDeviceGetHandleByIndex(i)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                if (memInfo.total - memInfo.used) >= freememsize:
+                    result.append (i)            
+            nvmlShutdown()
+        except:
+            pass
         return result
         
     @staticmethod
-    def getAllDevicesIdxsList():
-        if not hasNVML:
-            return [0]
-            
-        return [ i for i in range(0, nvmlDeviceGetCount() ) ]
+    def getDevicesWithAtLeastTotalMemoryGB(totalmemsize_gb):
+        result = []
+        try:
+            nvmlInit()
+            for i in range(0, nvmlDeviceGetCount() ):
+                handle = nvmlDeviceGetHandleByIndex(i)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                if (memInfo.total) >= totalmemsize_gb*1024*1024*1024:
+                    result.append (i)            
+            nvmlShutdown()
+        except:
+            pass
+        return result
         
     @staticmethod
-    def getAllDevicesIdxsWithNamesList():
-        if not hasNVML:
-            return [ (0, devicelib.getDeviceName(0) ) ]
-  
-        return [ (i, nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(i)).decode() ) for i in range(nvmlDeviceGetCount() ) ]
+    def getAllDevicesIdxsList ():
+        result = []
+        try:
+            nvmlInit()    
+            result = [ i for i in range(0, nvmlDeviceGetCount() ) ]    
+            nvmlShutdown()
+        except:
+            pass
+        return result
+        
+    @staticmethod
+    def getAllDevicesIdxsWithNamesList ():
+        result = []
+        try:
+            nvmlInit()    
+            result = [ (i, nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(i)).decode() ) for i in range(0, nvmlDeviceGetCount() ) ]    
+            nvmlShutdown()
+        except:
+            pass
+        return result
         
     @staticmethod
     def getDeviceVRAMFree (idx):
-        if not hasNVML:
-            return 2
-
-        if idx < nvmlDeviceGetCount():    
-            memInfo = nvmlDeviceGetMemoryInfo( nvmlDeviceGetHandleByIndex(idx) )
-            return memInfo.total - memInfo.used
-
-        return 0
+        result = 0
+        try:
+            nvmlInit()
+            if idx < nvmlDeviceGetCount():    
+                handle = nvmlDeviceGetHandleByIndex(idx)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                result = (memInfo.total - memInfo.used)        
+            nvmlShutdown()
+        except:
+            pass
+        return result
         
     @staticmethod
     def getDeviceVRAMTotalGb (idx):
-        if not hasNVML:
-            return 2
-            
-        if idx < nvmlDeviceGetCount():    
-            memInfo = nvmlDeviceGetMemoryInfo(  nvmlDeviceGetHandleByIndex(idx) )
-            return round ( memInfo.total / (1024*1024*1024) )
-
-        return 0
+        result = 2
+        try:
+            nvmlInit()
+            if idx < nvmlDeviceGetCount():    
+                handle = nvmlDeviceGetHandleByIndex(idx)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                result = memInfo.total / (1024*1024*1024)
+            nvmlShutdown()
+            result = round(result)
+        except:
+            pass
+        return result
         
     @staticmethod
     def getBestDeviceIdx():
-        if not hasNVML:
-            return 0
-
         idx = -1
-        idx_mem = 0
-        for i in range( nvmlDeviceGetCount() ):
-            memInfo = nvmlDeviceGetMemoryInfo( nvmlDeviceGetHandleByIndex(i) )
-            if memInfo.total > idx_mem:
-                idx = i
-                idx_mem = memInfo.total
+        try:
+            nvmlInit()
+            idx_mem = 0
+            for i in range(0, nvmlDeviceGetCount() ):
+                handle = nvmlDeviceGetHandleByIndex(i)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                if memInfo.total > idx_mem:
+                    idx = i
+                    idx_mem = memInfo.total
 
+            nvmlShutdown()
+        except:
+            pass
         return idx
         
     @staticmethod
     def getWorstDeviceIdx():
-        if not hasNVML:
-            return 0
-
         idx = -1
-        idx_mem = sys.maxsize
-        for i in range( nvmlDeviceGetCount() ):
-            memInfo = nvmlDeviceGetMemoryInfo( nvmlDeviceGetHandleByIndex(i) )
-            if memInfo.total < idx_mem:
-                idx = i
-                idx_mem = memInfo.total
+        try:
+            nvmlInit()    
+            
+            idx_mem = sys.maxsize
+            for i in range(0, nvmlDeviceGetCount() ):
+                handle = nvmlDeviceGetHandleByIndex(i)
+                memInfo = nvmlDeviceGetMemoryInfo( handle )
+                if memInfo.total < idx_mem:
+                    idx = i
+                    idx_mem = memInfo.total
 
+            nvmlShutdown()
+        except:
+            pass
         return idx
         
     @staticmethod
     def isValidDeviceIdx(idx):
-        if not hasNVML:
-            return (idx == 0)
-   
-        return (idx < nvmlDeviceGetCount())
+        result = False
+        try:
+            nvmlInit()    
+            result = (idx < nvmlDeviceGetCount())
+            nvmlShutdown()
+        except:
+            pass
+        return result
         
     @staticmethod
     def getDeviceIdxsEqualModel(idx):
-        if not hasNVML:
-            return [0] if idx == 0 else []            
-        
-        result = []  
-        idx_name = nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(idx)).decode()
-        for i in range( nvmlDeviceGetCount() ):
-            if nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(i)).decode() == idx_name:
-                result.append (i)
+        result = []
+        try:
+            nvmlInit()    
+            idx_name = nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(idx)).decode()
 
+            for i in range(0, nvmlDeviceGetCount() ):
+                if nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(i)).decode() == idx_name:
+                    result.append (i)
+                 
+            nvmlShutdown()
+        except:
+            pass
         return result
         
     @staticmethod
     def getDeviceName (idx):
-        if not hasNVML:
-            return 'Generic GeForce GPU'
-            
-        if idx < nvmlDeviceGetCount():    
-            return nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(idx)).decode()
-
-        return None
+        result = 'Generic GeForce GPU'
+        try:
+            nvmlInit()    
+            if idx < nvmlDeviceGetCount():    
+                result = nvmlDeviceGetName(nvmlDeviceGetHandleByIndex(idx)).decode()
+            nvmlShutdown()
+        except:
+            pass
+        return result
         
     @staticmethod
     def getDeviceComputeCapability(idx):
-        if not hasNVML:
-            return 99 if idx == 0 else 0
-            
-        result = 0  
-        if idx < nvmlDeviceGetCount():    
-            result = nvmlDeviceGetCudaComputeCapability(nvmlDeviceGetHandleByIndex(idx))
+        result = 0
+        try:
+            nvmlInit()    
+            if idx < nvmlDeviceGetCount():    
+                result = nvmlDeviceGetCudaComputeCapability(nvmlDeviceGetHandleByIndex(idx))
+            nvmlShutdown()
+        except:
+            pass
         return result[0] * 10 + result[1]
