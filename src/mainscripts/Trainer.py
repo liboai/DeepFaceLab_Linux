@@ -238,9 +238,11 @@ def main (training_data_src_dir, training_data_dst_dir, model_path, model_name, 
     
     output_queue = queue.Queue()
     input_queue = queue.Queue()
-    import threading
-    thread = threading.Thread(target=trainerThread, args=(output_queue, input_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name), kwargs=in_options )
-    thread.start()
 
     if in_options.get('disable_preview', False) == False:
+        import threading
+        thread = threading.Thread(target=trainerThread, args=(output_queue, input_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name), kwargs=in_options )
+        thread.start()
         previewThread (input_queue, output_queue)
+    else: 
+        trainerThread(output_queue, input_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name)
