@@ -1,5 +1,8 @@
 # Welcome to DeepFaceLab Linux!
 
+## Reporting Bugs
+If you find bugs with the scripts provided. Make an issue request here rather than in the main repository as the issue may only be with the Linux version. 
+
 ## Installation for Ubuntu 18.04 LTS
 
 #### Installing System Dependencies
