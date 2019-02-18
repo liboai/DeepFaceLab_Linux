@@ -71,6 +71,7 @@ class devicelib:
                         for gpu_idx in self.gpu_idxs:
                             self.gpu_names += [devicelib.getDeviceName(gpu_idx)]
                             self.gpu_compute_caps += [ devicelib.getDeviceComputeCapability ( gpu_idx ) ]
+                            self.gpu_vram_gb += [ devicelib.getDeviceVRAMTotalGb ( gpu_idx ) ]
                         
     @staticmethod
     def hasNVML():
