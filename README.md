@@ -1,41 +1,38 @@
-![](doc/DFL_welcome.jpg)
+# Welcome to DeepFaceLab Linux!
 
-## **DeepFaceLab** is a tool that utilizes deep learning to recognize and swap faces in pictures and videos.
+## Reporting Bugs
 
-If you like this software, please consider a donation.
+Please report bugs to this repository rather than the main repository, as bugs present within this fork may not happen upstream.
 
-Goal: RTX 2080 TI
+## Installation for Ubuntu 18.04 LTS
 
-[Donate via Yandex.Money](https://money.yandex.ru/to/41001142318065)
+#### Installing System Dependencies
 
-[Donate via Paypal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KK5ZCH4JXWMQS&source=url)
+```bash
+sudo apt update
+sudo apt install git build-essential ffmpeg
+```
 
-[Donate via Alipay](https://i.loli.net/2019/01/13/5c3ae3829809f.jpg)
+#### Update Video Driver
 
-bitcoin:31mPd6DxPCzbpCMZk4k1koWAbErSyqkAXr
+Use the Software & Updates tool or command line to update the NVIDIA driver to the latest revision. Do not use the Nouveau driver as problems will occur.
 
-- ### [Features](doc/doc_features.md)
+#### Installing Anaconda3
 
-- ### [Model types](doc/doc_model_types.md)
+You must install Anaconda3 before completing the following steps. You can find it at [https://www.anaconda.com/distribution/](https://www.anaconda.com/distribution/). Choose the defaults if you want to avoid any possible headaches.
 
-- ### [Convertor overview](doc/doc_convertor_overview.md)
+#### Finishing the Install
 
-- ### [Tips and tricks](doc/doc_tips_and_tricks.md)
 
-- ### [Using sort tool](doc/doc_sort_tool.md)
+```bash
+conda create -y -n deepfacelab python==3.6.6 cudatoolkit==9.0 cudnn
+conda activate deepfacelab
+git clone https://github.com/lbfs/DeepFaceLab_Linux.git
+cd DeepFaceLab_Linux
+python -m pip install -r requirements-gpu-opencl-cuda9-cudnn7.txt
+```
 
-- ### [Prebuilt windows app](doc/doc_prebuilt_windows_app.md)
+``conda activate deepfacelab`` will only be run once during installation. The scripts look for Anaconda3 in the primary install location and this step will be handled for you.
 
-- ### [Ready to work facesets](doc/doc_ready_to_work_facesets.md)
+After this, you should be finished. Simply navigate to the scripts directory and run the scripts just as you would on Windows!
 
-- ### [Build and repository info](doc/doc_build_and_repository_info.md)
-
-- ### Communication groups:
-
-(Chinese) QQ group 951138799 for ML/AI experts
-
-[deepfakes (Chinese)](https://deepfakes.com.cn/)
-
-[mrdeepfakes (English)](https://mrdeepfakes.com/forums/)
-
-[reddit (English)](https://www.reddit.com/r/GifFakes/new/)
