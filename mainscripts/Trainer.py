@@ -13,7 +13,6 @@ import cv2
 import models
 
 def trainerThread (input_queue, output_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name, save_interval_min=10, debug=False, **in_options):
-
     while True:
         try: 
             training_data_src_path = Path(training_data_src_dir)
@@ -45,13 +44,14 @@ def trainerThread (input_queue, output_queue, training_data_src_dir, training_da
                     model.save()
             
             def send_preview():
+                if output_queue is None: 
+                    return
                 if not debug:                        
-                    previews = model.get_previews()                
+                    previews = model.get_previews()          
                     output_queue.put ( {'op':'show', 'previews': previews, 'epoch':model.get_epoch(), 'loss_history': model.get_loss_history().copy() } )
                 else:
                     previews = [( 'debug, press update for new', model.debug_one_epoch())]
                     output_queue.put ( {'op':'show', 'previews': previews} )
-            
             
             if model.is_first_run():
                 model_save()
@@ -90,7 +90,7 @@ def trainerThread (input_queue, output_queue, training_data_src_dir, training_da
                 if debug:
                     time.sleep(0.005)
                     
-                while not input_queue.empty():
+                while input_queue is not None and not input_queue.empty():
                     input = input_queue.get()
                     op = input['op']
                     if op == 'save':
@@ -107,19 +107,17 @@ def trainerThread (input_queue, output_queue, training_data_src_dir, training_da
                 if i == -1:
                     break
                     
-                
-
             model.finalize()
                 
         except Exception as e:
             print ('Error: %s' % (str(e)))
             traceback.print_exc()
         break
-    output_queue.put ( {'op':'close'} )
+
+    if output_queue is not None:
+        output_queue.put ( {'op':'close'} )
 
 def previewThread (input_queue, output_queue):
-    
-    
     previews = None
     loss_history = None
     selected_preview = 0
@@ -235,11 +233,14 @@ def previewThread (input_queue, output_queue):
     
 def main (training_data_src_dir, training_data_dst_dir, model_path, model_name, **in_options):
     print ("Running trainer.\r\n")
-    
-    output_queue = queue.Queue()
-    input_queue = queue.Queue()
-    import threading
-    thread = threading.Thread(target=trainerThread, args=(output_queue, input_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name), kwargs=in_options )
-    thread.start()
 
-    previewThread (input_queue, output_queue)
+    if in_options.get('disable_preview', False) == False:       
+        output_queue = queue.Queue()
+        input_queue = queue.Queue()
+
+        import threading
+        thread = threading.Thread(target=trainerThread, args=(output_queue, input_queue, training_data_src_dir, training_data_dst_dir, model_path, model_name), kwargs=in_options )
+        thread.start()
+        previewThread(input_queue, output_queue)
+    else: 
+        trainerThread(None, None, training_data_src_dir, training_data_dst_dir, model_path, model_name)
