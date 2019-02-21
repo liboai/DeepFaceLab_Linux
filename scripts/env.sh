@@ -1,7 +1,8 @@
 source ~/anaconda3/etc/profile.d/conda.sh
 conda activate deepfacelab
 cd ..
-export DFL_WORKSPACE=$(realpath workspace)
+
+export DFL_WORKSPACE="workspace/"
 
 if [ ! -d "$DFL_WORKSPACE" ]; then
     mkdir "$DFL_WORKSPACE"
@@ -12,4 +13,4 @@ if [ ! -d "$DFL_WORKSPACE" ]; then
     mkdir "$DFL_WORKSPACE/model"
 fi
 
-export DFL_SRC=$(realpath .)
+export DFL_SRC="./"
