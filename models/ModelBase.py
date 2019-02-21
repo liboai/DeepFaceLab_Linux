@@ -22,7 +22,14 @@ class ModelBase(object):
     def __init__(self, model_path, training_data_src_path=None, training_data_dst_path=None, debug = False, force_gpu_idx=-1, **in_options):
     
         if force_gpu_idx == -1: 
-            idxs_names_list = nnlib.device.getValidDevicesIdxsWithNamesList()
+            '''
+            probably not the best fix, but for the converter everything should be done on the
+            cpu anyways, so lets try to getValidDevicesIdxsWithNamesList(), but will fail, and then keep the current force_gpu_idex
+            '''
+            try:
+                idxs_names_list = nnlib.device.getValidDevicesIdxsWithNamesList()
+            except:
+                idxs_names_list = []
             if len(idxs_names_list) > 1:
                 print ("You have multi GPUs in a system: ")
                 for idx, name in idxs_names_list:
